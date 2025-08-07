@@ -9,10 +9,11 @@ from typing import Dict, List
 from dotenv import load_dotenv
 
 from bots.api_client import TNBApiClient
+from bots.logging_config import setup_colored_logging
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

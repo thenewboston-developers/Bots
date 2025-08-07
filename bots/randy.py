@@ -7,10 +7,11 @@ from typing import Any, Dict, Optional, Tuple
 from dotenv import load_dotenv
 
 from bots.api_client import TNBApiClient
+from bots.logging_config import setup_colored_logging
 
 load_dotenv(override=True)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY_TICKER = 'TNB'
