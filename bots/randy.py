@@ -15,9 +15,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Constants
-DEFAULT_CURRENCY_TICKER = "TNB"  # Reserve currency that should never be sold
-SELL_PROBABILITY = 0.25  # 25% chance to sell non-TNB currencies
+DEFAULT_CURRENCY_TICKER = "TNB"
+SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
 class RandyBot:

@@ -11,21 +11,10 @@ class TNBApiClient:
         self.base_url = base_url
         self.session = requests.Session()
         self.access_token: Optional[str] = None
-        # Only keep essential headers
         self.session.headers.update({
             "Accept": "application/json, text/plain, */*",
             "Content-Type": "application/json",
         })
-
-    def get_exchange_orders(self) -> List[Dict[str, Any]]:
-        endpoint = f"{self.base_url}/exchange-orders"
-        response = self.session.get(endpoint)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            logger.error(f"Failed to get exchange orders: {response.status_code} - {response.text}")
-            return []
 
     def get_asset_pairs(self) -> List[Dict[str, Any]]:
         endpoint = f"{self.base_url}/asset-pairs"
@@ -35,6 +24,16 @@ class TNBApiClient:
             return response.json()
         else:
             logger.error(f"Failed to get asset pairs: {response.status_code} - {response.text}")
+            return []
+
+    def get_exchange_orders(self) -> List[Dict[str, Any]]:
+        endpoint = f"{self.base_url}/exchange-orders"
+        response = self.session.get(endpoint)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(f"Failed to get exchange orders: {response.status_code} - {response.text}")
             return []
 
     def get_order_book(self, asset_pair_id: int) -> Dict[str, Any]:
@@ -80,7 +79,6 @@ class TNBApiClient:
         if response.status_code == 200:
             data = response.json()
 
-            # Extract access token from known response structure
             try:
                 self.access_token = data["authentication"]["access_token"]
                 self.session.headers["Authorization"] = f"Bearer {self.access_token}"
