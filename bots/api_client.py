@@ -28,6 +28,49 @@ class TNBApiClient:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
+    def get_currencies(
+        self,
+        no_wallet: Optional[bool] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+        ordering: Optional[str] = None
+    ) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/currencies'
+        params = {}
+
+        if no_wallet is not None:
+            params['no_wallet'] = 'true' if no_wallet else 'false'
+        if page is not None:
+            params['page'] = str(page)
+        if page_size is not None:
+            params['page_size'] = str(page_size)
+        if ordering is not None:
+            params['ordering'] = ordering
+
+        response = self.session.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_msg = f'Failed to get currencies: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_currency(self, currency_id: int) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/currencies/{currency_id}'
+        response = self.session.get(endpoint)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            error_msg = f'Currency {currency_id} not found'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        else:
+            error_msg = f'Failed to get currency {currency_id}: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
     def get_exchange_orders(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/exchange-orders'
         response = self.session.get(endpoint)
@@ -74,6 +117,100 @@ class TNBApiClient:
             return response.json()
         else:
             error_msg = f'Failed to get posts: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_trade_price_chart_data(self, asset_pair: int, time_range: str) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/trade-price-chart-data'
+        params = {'asset_pair': str(asset_pair), 'time_range': time_range}
+
+        response = self.session.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 400:
+            error_msg = f'Invalid request for chart data: {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        else:
+            error_msg = f'Failed to get chart data: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_transfers(self,
+                      currency: int,
+                      page: Optional[int] = None,
+                      page_size: Optional[int] = None) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/transfers'
+        params = {'currency': currency}
+
+        if page is not None:
+            params['page'] = page
+        if page_size is not None:
+            params['page_size'] = page_size
+
+        response = self.session.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 400:
+            error_msg = 'Currency parameter is required for transfers'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        else:
+            error_msg = f'Failed to get transfers: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_user(self, user_id: int) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/users/{user_id}'
+        # Users endpoint doesn't require authentication
+
+        response = self.session.get(endpoint)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            error_msg = f'User {user_id} not found'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        else:
+            error_msg = f'Failed to get user {user_id}: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_user_stats(self, user_id: int) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/user/{user_id}/stats'
+        response = self.session.get(endpoint)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            error_msg = f'User {user_id} not found'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        else:
+            error_msg = f'Failed to get user stats for {user_id}: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    def get_users(self, page: Optional[int] = None, page_size: Optional[int] = None) -> List[Dict[str, Any]]:
+        endpoint = f'{self.base_url}/users'
+        params = {}
+
+        # Note: The API returns a list, not a paginated response
+        # Parameters are kept for potential future API changes
+        if page is not None:
+            params['page'] = page
+        if page_size is not None:
+            params['page_size'] = page_size
+
+        response = self.session.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_msg = f'Failed to get users: {response.status_code} - {response.text}'
             logger.error(error_msg)
             raise ValueError(error_msg)
 
