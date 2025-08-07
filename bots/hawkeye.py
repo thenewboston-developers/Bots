@@ -53,8 +53,8 @@ load_dotenv(override=True)
 setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-INTERVAL_SECONDS = 5  # Time to wait between iterations (0 = no wait)
-MAX_ITERATIONS = 2  # Maximum number of iterations (0 = infinite)
+INTERVAL_SECONDS = 60  # Time to wait between iterations (0 = no wait)
+MAX_ITERATIONS = 0  # Maximum number of iterations (0 = infinite)
 RECENCY_PENALTY_MINUTES = 10  # How long to penalize recently traded pairs
 MAX_RECENCY_PENALTY = 30  # Maximum score penalty for recent trades
 

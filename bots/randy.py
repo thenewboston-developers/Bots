@@ -50,8 +50,8 @@ setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY_TICKER = 'TNB'
-INTERVAL_SECONDS = 5  # Time to wait between iterations (0 = no wait)
-MAX_ITERATIONS = 2  # Maximum number of iterations (0 = infinite)
+INTERVAL_SECONDS = 60  # Time to wait between iterations (0 = no wait)
+MAX_ITERATIONS = 0  # Maximum number of iterations (0 = infinite)
 SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
