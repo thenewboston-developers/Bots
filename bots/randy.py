@@ -9,50 +9,48 @@ from bots.api_client import TNBApiClient
 
 load_dotenv(override=True)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-DEFAULT_CURRENCY_TICKER = "TNB"
+DEFAULT_CURRENCY_TICKER = 'TNB'
 SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
 class RandyBot:
-    def __init__(self, username: str = None, password: str = None):
-        self.username = username or os.getenv("TNB_USERNAME")
-        self.password = password or os.getenv("TNB_PASSWORD")
+
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None):
+        self.username = username or os.getenv('TNB_USERNAME')
+        self.password = password or os.getenv('TNB_PASSWORD')
 
         if not self.username or not self.password:
-            raise ValueError("TNB_USERNAME and TNB_PASSWORD must be set in .env file or provided as arguments")
+            raise ValueError('TNB_USERNAME and TNB_PASSWORD must be set in .env file or provided as arguments')
 
         self.client = TNBApiClient()
-        self.wallets = {}
+        self.wallets: Dict[str, Any] = {}
         self.tnb_balance = 0
 
     @staticmethod
     def analyze_order_book(order_book: Dict[str, Any]):
         if not order_book:
-            logger.warning("Empty order book")
+            logger.warning('Empty order book')
             return
 
-        buy_orders = order_book.get("buy_orders", [])
-        sell_orders = order_book.get("sell_orders", [])
+        buy_orders = order_book.get('buy_orders', [])
+        sell_orders = order_book.get('sell_orders', [])
 
-        logger.info(f"Order book: {len(buy_orders)} buy orders, {len(sell_orders)} sell orders")
+        logger.info(f'Order book: {len(buy_orders)} buy orders, {len(sell_orders)} sell orders')
 
         if buy_orders:
-            highest_buy = max(buy_orders, key=lambda x: int(x.get("price", 0)))
+            highest_buy = max(buy_orders, key=lambda x: int(x.get('price', 0)))
             logger.info(f"Highest buy: {highest_buy.get('price')} @ {highest_buy.get('quantity')}")
 
         if sell_orders:
-            lowest_sell = min(sell_orders, key=lambda x: int(x.get("price", float('inf'))))
+            lowest_sell = min(sell_orders, key=lambda x: int(x.get('price', float('inf'))))
             logger.info(f"Lowest sell: {lowest_sell.get('price')} @ {lowest_sell.get('quantity')}")
 
     def decide_trade_action(self) -> Tuple[str, Optional[str]]:
         """Decide whether to buy or sell, and which currency to sell if selling.
-        
+
         Returns:
             Tuple of (action, currency_ticker) where action is 'buy' or 'sell'
             and currency_ticker is the currency to sell (None if buying)
@@ -64,33 +62,33 @@ class RandyBot:
         if non_tnb_currencies and random.random() < SELL_PROBABILITY:
             # Pick a random non-TNB currency to sell
             currency_to_sell = random.choice(list(non_tnb_currencies.keys()))
-            return "sell", currency_to_sell
+            return 'sell', currency_to_sell
         else:
             # Otherwise buy
-            return "buy", None
+            return 'buy', None
 
     def fetch_wallet_info(self):
         wallets = self.client.get_wallets()
         if wallets:
             for wallet in wallets:
-                currency = wallet.get("currency", {})
-                currency_name = currency.get("ticker", "Unknown")
-                balance = wallet.get("balance", 0)
+                currency = wallet.get('currency', {})
+                currency_name = currency.get('ticker', 'Unknown')
+                balance = wallet.get('balance', 0)
                 self.wallets[currency_name] = balance
 
                 if currency_name == DEFAULT_CURRENCY_TICKER:
                     self.tnb_balance = int(balance)
 
-            logger.info(f"Wallet balances: {self.wallets}")
-            logger.info(f"TNB balance: {self.tnb_balance}")
+            logger.info(f'Wallet balances: {self.wallets}')
+            logger.info(f'TNB balance: {self.tnb_balance}')
         else:
-            logger.warning("No wallet information retrieved")
+            logger.warning('No wallet information retrieved')
 
     def get_asset_pair_for_currency(self, currency_ticker: str, asset_pairs: list) -> Optional[Dict[str, Any]]:
         """Find the asset pair for a given currency ticker."""
         for pair in asset_pairs:
             # Check if this pair involves the currency we want to trade
-            if pair.get("primary_currency", {}).get("ticker") == currency_ticker:
+            if pair.get('primary_currency', {}).get('ticker') == currency_ticker:
                 return pair
         return None
 
@@ -102,20 +100,21 @@ class RandyBot:
             if ticker != DEFAULT_CURRENCY_TICKER and int(balance) > 0
         }
 
-    def place_smart_order(self, asset_pair_id: int, order_book: Dict[str, Any], action: str = "buy",
-                          currency_balance: int = 0):
+    def place_smart_order(
+        self, asset_pair_id: int, order_book: Dict[str, Any], action: str = 'buy', currency_balance: int = 0
+    ):
         """Place a smart buy or sell order based on the order book.
-        
+
         Args:
             asset_pair_id: The asset pair to trade
             order_book: The current order book
             action: 'buy' or 'sell'
             currency_balance: Balance of currency to sell (only used when action='sell')
         """
-        buy_orders = order_book.get("buy_orders", [])
-        sell_orders = order_book.get("sell_orders", [])
+        buy_orders = order_book.get('buy_orders', [])
+        sell_orders = order_book.get('sell_orders', [])
 
-        if action == "sell":
+        if action == 'sell':
             # Selling logic
             side = -1  # SELL
 
@@ -125,8 +124,8 @@ class RandyBot:
                 quantity = min(currency_balance, 50)  # Sell up to 50 units
             else:
                 # Place a sell order slightly above the highest buy
-                highest_buy = max(buy_orders, key=lambda x: int(x.get("price", 0)))
-                highest_price = int(highest_buy.get("price", 10))
+                highest_buy = max(buy_orders, key=lambda x: int(x.get('price', 0)))
+                highest_price = int(highest_buy.get('price', 10))
 
                 # Price 5% above highest buy
                 price = int(highest_price * 1.05)
@@ -143,8 +142,8 @@ class RandyBot:
                 quantity = 20
             else:
                 # Place a buy order slightly below the lowest sell
-                lowest_sell = min(sell_orders, key=lambda x: int(x.get("price", float('inf'))))
-                lowest_price = int(lowest_sell.get("price", 5))
+                lowest_sell = min(sell_orders, key=lambda x: int(x.get('price', float('inf'))))
+                lowest_price = int(lowest_sell.get('price', 5))
 
                 # Calculate order details
                 price = int(lowest_price * 0.95)  # 5% below lowest sell
@@ -158,19 +157,19 @@ class RandyBot:
         if quantity > 0 and price > 0:
             logger.info(f"Placing order: {'BUY' if side == 1 else 'SELL'} {quantity} @ {price} TNB")
             result = self.client.place_order(asset_pair_id, price, quantity, side)
-            logger.info(f"Order result: {result}")
+            logger.info(f'Order result: {result}')
         else:
-            logger.warning("Invalid order parameters, skipping order placement")
+            logger.warning('Invalid order parameters, skipping order placement')
 
     def run(self):
-        logger.info("Starting Randy Bot...")
+        logger.info('Starting Randy Bot...')
 
         # Step 1: Login
         try:
             self.client.login(self.username, self.password)
-            logger.info("Login successful!")
+            logger.info('Login successful!')
         except ValueError as e:
-            logger.error(f"Failed to login: {e}")
+            logger.error(f'Failed to login: {e}')
             return
 
         # Step 2: Get wallet information
@@ -178,49 +177,49 @@ class RandyBot:
 
         # Step 3: Get trade history
         trade_history = self.client.get_trade_history()
-        logger.info(f"Retrieved {len(trade_history)} trade history items")
+        logger.info(f'Retrieved {len(trade_history)} trade history items')
 
         # Step 4: Get available asset pairs
         asset_pairs = self.client.get_asset_pairs()
         if not asset_pairs:
-            logger.error("No asset pairs found. Cannot continue.")
+            logger.error('No asset pairs found. Cannot continue.')
             return
 
         # Step 5: Decide whether to buy or sell
         action, currency_to_sell = self.decide_trade_action()
-        logger.info(f"Trade decision: {action.upper()}" + (f" {currency_to_sell}" if currency_to_sell else ""))
+        logger.info(f'Trade decision: {action.upper()}' + (f' {currency_to_sell}' if currency_to_sell else ''))
 
         # Step 6: Select appropriate asset pair
-        if action == "sell" and currency_to_sell:
+        if action == 'sell' and currency_to_sell:
             # Find the asset pair for the currency we want to sell
             selected_pair = self.get_asset_pair_for_currency(currency_to_sell, asset_pairs)
             if not selected_pair:
-                logger.warning(f"No asset pair found for {currency_to_sell}, falling back to buy")
-                action = "buy"
+                logger.warning(f'No asset pair found for {currency_to_sell}, falling back to buy')
+                action = 'buy'
                 selected_pair = random.choice(asset_pairs)
         else:
             # Random pair for buying
             selected_pair = random.choice(asset_pairs)
 
-        asset_pair_id = selected_pair.get("id", 2)
-        logger.info(f"Selected asset pair: {asset_pair_id}")
+        asset_pair_id = selected_pair.get('id', 2)
+        logger.info(f'Selected asset pair: {asset_pair_id}')
 
         # Step 7: Get order book for the selected pair
         order_book = self.client.get_order_book(asset_pair_id)
         self.analyze_order_book(order_book)
 
         # Step 8: Place an order
-        if action == "sell" and currency_to_sell:
+        if action == 'sell' and currency_to_sell:
             # Get the balance of the currency to sell
             currency_balance = int(self.wallets.get(currency_to_sell, 0))
             if currency_balance > 0:
-                self.place_smart_order(asset_pair_id, order_book, action="sell", currency_balance=currency_balance)
+                self.place_smart_order(asset_pair_id, order_book, action='sell', currency_balance=currency_balance)
             else:
-                logger.warning(f"No balance for {currency_to_sell}, cannot sell")
+                logger.warning(f'No balance for {currency_to_sell}, cannot sell')
         elif self.tnb_balance > 100:  # Only buy if we have sufficient TNB
-            self.place_smart_order(asset_pair_id, order_book, action="buy")
+            self.place_smart_order(asset_pair_id, order_book, action='buy')
         else:
-            logger.warning(f"Insufficient TNB balance: {self.tnb_balance}")
+            logger.warning(f'Insufficient TNB balance: {self.tnb_balance}')
 
 
 def main():
@@ -228,5 +227,5 @@ def main():
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
