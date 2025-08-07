@@ -62,6 +62,21 @@ class TNBApiClient:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
+    def get_posts(self, page: Optional[int] = None) -> Dict[str, Any]:
+        endpoint = f'{self.base_url}/posts'
+        params = {}
+        if page is not None:
+            params['page'] = page
+
+        response = self.session.get(endpoint, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            error_msg = f'Failed to get posts: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
     def get_wallets(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/wallets'
         response = self.session.get(endpoint)
