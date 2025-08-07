@@ -8,8 +8,8 @@ from typing import Dict, List
 
 from dotenv import load_dotenv
 
-from bots.api_client import TNBApiClient
-from bots.logging_config import setup_colored_logging
+from config.logging_config import setup_colored_logging
+from thenewboston.api_client import TNBApiClient
 
 load_dotenv()
 
@@ -151,12 +151,12 @@ def generate_markdown_report(currencies_data: Dict[str, List[Dict]]) -> str:
 
 def main():
     try:
-        # Get credentials from environment
-        username = os.getenv('TNB_USERNAME')
-        password = os.getenv('TNB_PASSWORD')
+        # Get credentials from environment (using Randy's by default for reports)
+        username = os.getenv('RANDYS_USERNAME')
+        password = os.getenv('RANDYS_PASSWORD')
 
         if not username or not password:
-            raise ValueError('TNB_USERNAME and TNB_PASSWORD must be set in .env file')
+            raise ValueError('RANDYS_USERNAME and RANDYS_PASSWORD must be set in .env file')
 
         # Initialize API client and login
         client = TNBApiClient()

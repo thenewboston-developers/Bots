@@ -1,3 +1,38 @@
+"""
+Randy - Random Trading Bot
+
+A chaotic trading bot that makes random decisions for testing and market liquidity.
+
+STRATEGY:
+=========
+1. RANDOM DECISION MAKING
+   - 75% chance to BUY a random asset pair
+   - 25% chance to SELL if holding non-TNB currencies
+   - No technical analysis or market evaluation
+
+2. TRADE EXECUTION
+   - BUY: Places orders at 95% of lowest sell price
+   - SELL: Places orders at 105% of highest buy price
+   - Quantity: Random between 25-100% of holdings
+
+3. RISK MANAGEMENT (Minimal)
+   - Limits spending to 10% of TNB balance per trade
+   - Maximum 100 TNB per buy order
+   - Requires minimum 100 TNB balance to trade
+
+CONFIGURATION:
+=============
+- INTERVAL_SECONDS = 5: Wait time between trades
+- MAX_ITERATIONS = 4: Number of trades to execute
+- SELL_PROBABILITY = 0.25: Chance to sell vs buy
+
+PURPOSE:
+========
+Randy serves as a baseline comparison for sophisticated bots and provides
+random market activity for testing. His completely random approach helps
+evaluate whether strategic bots actually outperform chance.
+"""
+
 import logging
 import os
 import random
@@ -6,8 +41,8 @@ from typing import Any, Dict, Optional, Tuple
 
 from dotenv import load_dotenv
 
-from bots.api_client import TNBApiClient
-from bots.logging_config import setup_colored_logging
+from config.logging_config import setup_colored_logging
+from thenewboston.api_client import TNBApiClient
 
 load_dotenv(override=True)
 
@@ -16,18 +51,18 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY_TICKER = 'TNB'
 INTERVAL_SECONDS = 5  # Time to wait between iterations (0 = no wait)
-MAX_ITERATIONS = 4  # Maximum number of iterations (0 = infinite)
+MAX_ITERATIONS = 2  # Maximum number of iterations (0 = infinite)
 SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
 class RandyBot:
 
     def __init__(self, username: Optional[str] = None, password: Optional[str] = None):
-        self.username = username or os.getenv('TNB_USERNAME')
-        self.password = password or os.getenv('TNB_PASSWORD')
+        self.username = username or os.getenv('RANDYS_USERNAME')
+        self.password = password or os.getenv('RANDYS_PASSWORD')
 
         if not self.username or not self.password:
-            raise ValueError('TNB_USERNAME and TNB_PASSWORD must be set in .env file or provided as arguments')
+            raise ValueError('RANDYS_USERNAME and RANDYS_PASSWORD must be set in .env file or provided as arguments')
 
         self.client = TNBApiClient()
         self.wallets: Dict[str, Any] = {}
