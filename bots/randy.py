@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import time
 from typing import Any, Dict, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -13,6 +14,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY_TICKER = 'TNB'
+INTERVAL_SECONDS = 5  # Time to wait between iterations (0 = no wait)
+MAX_ITERATIONS = 4  # Maximum number of iterations (0 = infinite)
 SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
@@ -220,8 +223,26 @@ class RandyBot:
 
 
 def main():
-    bot = RandyBot()
-    bot.run()
+    if INTERVAL_SECONDS == 0 and MAX_ITERATIONS == 0:
+        raise ValueError('Both INTERVAL_SECONDS and MAX_ITERATIONS cannot be 0. Set at least one value.')
+
+    iteration = 0
+    while True:
+        iteration += 1
+        logger.info(f'Starting iteration {iteration}')
+
+        bot = RandyBot()
+        bot.run()
+
+        # Check if we've hit max iterations
+        if MAX_ITERATIONS > 0 and iteration >= MAX_ITERATIONS:
+            logger.info(f'Reached maximum iterations ({MAX_ITERATIONS}). Exiting.')
+            break
+
+        # Wait for interval if specified
+        if INTERVAL_SECONDS > 0:
+            logger.info(f'Waiting {INTERVAL_SECONDS} seconds before next iteration...')
+            time.sleep(INTERVAL_SECONDS)
 
 
 if __name__ == '__main__':
