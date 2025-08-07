@@ -69,22 +69,20 @@ class RandyBot:
 
     def fetch_wallet_info(self):
         wallets = self.client.get_wallets()
-        if wallets:
-            for wallet in wallets:
-                currency = wallet.get('currency', {})
-                currency_name = currency.get('ticker', 'Unknown')
-                balance = wallet.get('balance', 0)
-                self.wallets[currency_name] = balance
+        for wallet in wallets:
+            currency = wallet.get('currency', {})
+            currency_name = currency.get('ticker', 'Unknown')
+            balance = wallet.get('balance', 0)
+            self.wallets[currency_name] = balance
 
-                if currency_name == DEFAULT_CURRENCY_TICKER:
-                    self.tnb_balance = int(balance)
+            if currency_name == DEFAULT_CURRENCY_TICKER:
+                self.tnb_balance = int(balance)
 
-            logger.info(f'Wallet balances: {self.wallets}')
-            logger.info(f'TNB balance: {self.tnb_balance}')
-        else:
-            logger.warning('No wallet information retrieved')
+        logger.info(f'Wallet balances: {self.wallets}')
+        logger.info(f'TNB balance: {self.tnb_balance}')
 
-    def get_asset_pair_for_currency(self, currency_ticker: str, asset_pairs: list) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def get_asset_pair_for_currency(currency_ticker: str, asset_pairs: list) -> Optional[Dict[str, Any]]:
         """Find the asset pair for a given currency ticker."""
         for pair in asset_pairs:
             # Check if this pair involves the currency we want to trade
@@ -175,15 +173,14 @@ class RandyBot:
         # Step 2: Get wallet information
         self.fetch_wallet_info()
 
-        # Step 3: Get trade history
-        trade_history = self.client.get_trade_history()
-        logger.info(f'Retrieved {len(trade_history)} trade history items')
+        # Step 3: Get platform trade history
+        trade_history = self.client.get_platform_trade_history()
+        logger.info(f'Retrieved {len(trade_history)} platform trade history items')
 
         # Step 4: Get available asset pairs
         asset_pairs = self.client.get_asset_pairs()
         if not asset_pairs:
-            logger.error('No asset pairs found. Cannot continue.')
-            return
+            raise ValueError('No asset pairs found. Cannot continue.')
 
         # Step 5: Decide whether to buy or sell
         action, currency_to_sell = self.decide_trade_action()
@@ -192,7 +189,7 @@ class RandyBot:
         # Step 6: Select appropriate asset pair
         if action == 'sell' and currency_to_sell:
             # Find the asset pair for the currency we want to sell
-            selected_pair = self.get_asset_pair_for_currency(currency_to_sell, asset_pairs)
+            selected_pair = RandyBot.get_asset_pair_for_currency(currency_to_sell, asset_pairs)
             if not selected_pair:
                 logger.warning(f'No asset pair found for {currency_to_sell}, falling back to buy')
                 action = 'buy'

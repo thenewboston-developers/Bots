@@ -24,8 +24,9 @@ class TNBApiClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f'Failed to get asset pairs: {response.status_code} - {response.text}')
-            return []
+            error_msg = f'Failed to get asset pairs: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
     def get_exchange_orders(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/exchange-orders'
@@ -34,8 +35,9 @@ class TNBApiClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f'Failed to get exchange orders: {response.status_code} - {response.text}')
-            return []
+            error_msg = f'Failed to get exchange orders: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
     def get_order_book(self, asset_pair_id: int) -> Dict[str, Any]:
         endpoint = f'{self.base_url}/exchange-orders/book'
@@ -45,18 +47,20 @@ class TNBApiClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f'Failed to get order book: {response.status_code} - {response.text}')
-            return {}
+            error_msg = f'Failed to get order book: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
-    def get_trade_history(self) -> List[Dict[str, Any]]:
+    def get_platform_trade_history(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/trade-history-items'
         response = self.session.get(endpoint)
 
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f'Failed to get trade history: {response.status_code} - {response.text}')
-            return []
+            error_msg = f'Failed to get platform trade history: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
     def get_wallets(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/wallets'
@@ -65,8 +69,9 @@ class TNBApiClient:
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error(f'Failed to get wallets: {response.status_code} - {response.text}')
-            return []
+            error_msg = f'Failed to get wallets: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
     def login(self, username: str, password: str) -> Dict[str, Any]:
         endpoint = f'{self.base_url}/login'
@@ -104,5 +109,6 @@ class TNBApiClient:
             logger.info(f'Order placed successfully: {payload}')
             return response.json()
         else:
-            logger.error(f'Failed to place order: {response.status_code} - {response.text}')
-            return response.json() if response.text else {}
+            error_msg = f'Failed to place order: {response.status_code} - {response.text}'
+            logger.error(error_msg)
+            raise ValueError(error_msg)
