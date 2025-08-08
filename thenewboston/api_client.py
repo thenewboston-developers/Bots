@@ -96,7 +96,8 @@ class TNBApiClient:
 
     def get_platform_trade_history(self) -> List[Dict[str, Any]]:
         endpoint = f'{self.base_url}/trade-history-items'
-        response = self.session.get(endpoint)
+        params = {'ordering': '-volume_24h'}
+        response = self.session.get(endpoint, params=params)
 
         if response.status_code == 200:
             return response.json()
