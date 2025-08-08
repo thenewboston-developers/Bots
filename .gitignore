@@ -74,3 +74,5 @@ coverage.xml
 htmlcov/
 nosetests.xml
 /celerybeat-schedule*
+logs/
+*.sqlite3

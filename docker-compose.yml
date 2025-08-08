@@ -1,0 +1,151 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: tnb_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tnb_exchange}
+      POSTGRES_USER: ${POSTGRES_USER:-tnb_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tnb_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tnb_user} -d ${POSTGRES_DB:-tnb_exchange}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnb_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tnb_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tnb_network
+
+  web:
+    image: ${DOCKER_REGISTRY:-local}/tnb-exchange-web:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+    container_name: tnb_web
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-tnb_user}:${POSTGRES_PASSWORD:-tnb_password}@db:5432/${POSTGRES_DB:-tnb_exchange}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - .:/app
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tnb_network
+
+  celery:
+    image: ${DOCKER_REGISTRY:-local}/tnb-exchange-celery:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+    container_name: tnb_celery
+    restart: unless-stopped
+    command: celery -A tnb_exchange worker --loglevel=${CELERY_LOG_LEVEL:-info}
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-tnb_user}:${POSTGRES_PASSWORD:-tnb_password}@db:5432/${POSTGRES_DB:-tnb_exchange}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tnb_network
+
+  celery-beat:
+    image: ${DOCKER_REGISTRY:-local}/tnb-exchange-beat:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+    container_name: tnb_celery_beat
+    restart: unless-stopped
+    command: celery -A tnb_exchange beat --loglevel=${CELERY_LOG_LEVEL:-info}
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-tnb_user}:${POSTGRES_PASSWORD:-tnb_password}@db:5432/${POSTGRES_DB:-tnb_exchange}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tnb_network
+
+  flower:
+    image: ${DOCKER_REGISTRY:-local}/tnb-exchange-flower:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.11}
+    container_name: tnb_flower
+    restart: unless-stopped
+    command: celery -A tnb_exchange flower --port=5555
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-tnb_user}:${POSTGRES_PASSWORD:-tnb_password}@db:5432/${POSTGRES_DB:-tnb_exchange}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    depends_on:
+      - celery
+      - redis
+    networks:
+      - tnb_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tnb_network:
+    driver: bridge

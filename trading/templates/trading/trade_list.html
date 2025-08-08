@@ -1,0 +1,75 @@
+{% extends 'trading/base.html' %}
+
+{% block title %}Trade List - TNB Trading Bots{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-exchange-alt"></i> Trade History
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">All Trades</h5>
+            </div>
+            <div class="card-body">
+                {% if trades %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Bot</th>
+                                    <th>Pair</th>
+                                    <th>Side</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trade in trades %}
+                                    <tr>
+                                        <td>{{ trade.executed_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{% url 'trading:bot_detail' trade.bot_run.bot_config.id %}">
+                                                {{ trade.bot_run.bot_config.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ trade.asset_pair }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if trade.side == 'BUY' %}success{% else %}danger{% endif %}">
+                                                {{ trade.side }}
+                                            </span>
+                                        </td>
+                                        <td>{{ trade.price }}</td>
+                                        <td>{{ trade.quantity }}</td>
+                                        <td>{{ trade.total_value }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if trade.status == 'executed' %}success{% elif trade.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                                {{ trade.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No trades found</h5>
+                        <p class="text-muted">Trades will appear here once your bots start executing orders.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,154 @@
+{% extends 'trading/base.html' %}
+
+{% block title %}Dashboard - TNB Trading Bots{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line"></i> Trading Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-robot"></i> Active Bots
+                </h5>
+                <h2 class="card-text">{{ active_bots }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-play-circle"></i> Recent Runs
+                </h5>
+                <h2 class="card-text">{{ recent_runs.count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-exchange-alt"></i> Recent Trades
+                </h5>
+                <h2 class="card-text">{{ recent_trades.count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-cog"></i> System Status
+                </h5>
+                <h2 class="card-text">Online</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Recent Bot Runs
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_runs %}
+                    <div class="list-group list-group-flush">
+                        {% for run in recent_runs %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ run.bot_config.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ run.started_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                                <span class="badge bg-{% if run.status == 'completed' %}success{% elif run.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                    {{ run.get_status_display }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent bot runs.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exchange-alt"></i> Recent Trades
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_trades %}
+                    <div class="list-group list-group-flush">
+                        {% for trade in recent_trades %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ trade.side }} {{ trade.quantity }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ trade.asset_pair }} @ {{ trade.price }}</small>
+                                </div>
+                                <span class="badge bg-{% if trade.status == 'executed' %}success{% elif trade.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                    {{ trade.get_status_display }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent trades.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tools"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{% url 'trading:bot_list' %}" class="btn btn-primary btn-lg w-100 mb-2">
+                            <i class="fas fa-robot"></i> Manage Bots
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'trading:trade_list' %}" class="btn btn-info btn-lg w-100 mb-2">
+                            <i class="fas fa-exchange-alt"></i> View Trades
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'trading:run_list' %}" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="fas fa-play-circle"></i> View Runs
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'admin:index' %}" class="btn btn-warning btn-lg w-100 mb-2">
+                            <i class="fas fa-cog"></i> Admin Panel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

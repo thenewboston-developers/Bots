@@ -1,0 +1,180 @@
+{% extends 'trading/base.html' %}
+
+{% block title %}{{ bot.name }} - TNB Trading Bots{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'trading:bot_list' %}">Bots</a></li>
+                <li class="breadcrumb-item active">{{ bot.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="mb-4">
+            <i class="fas fa-robot"></i> {{ bot.name }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Bot Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Type:</strong></td>
+                        <td><span class="badge bg-info">{{ bot.get_bot_type_display }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            <span class="badge bg-{% if bot.status == 'active' %}success{% elif bot.status == 'paused' %}warning{% else %}secondary{% endif %}">
+                                {{ bot.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ bot.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Run:</strong></td>
+                        <td>
+                            {% if bot.last_run %}
+                                {{ bot.last_run|date:"M d, Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Runs:</strong></td>
+                        <td>{{ bot.total_runs }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Max Spend:</strong></td>
+                        <td>{{ bot.max_spend_per_trade }} TNB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Min Balance:</strong></td>
+                        <td>{{ bot.min_balance_required }} TNB</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog"></i> Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>API Username:</strong></td>
+                        <td>{{ bot.api_username }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>API Base URL:</strong></td>
+                        <td>{{ bot.api_base_url }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sell Probability:</strong></td>
+                        <td>{{ bot.sell_probability|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Interval:</strong></td>
+                        <td>{{ bot.interval_seconds }} seconds</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Max Iterations:</strong></td>
+                        <td>
+                            {% if bot.max_iterations == 0 %}
+                                Infinite
+                            {% else %}
+                                {{ bot.max_iterations }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                <div class="mt-3">
+                    <a href="{% url 'admin:trading_botconfig_change' bot.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Configuration
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Recent Runs
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_runs %}
+                    <div class="list-group list-group-flush">
+                        {% for run in recent_runs %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ run.started_at|date:"M d, Y H:i" }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ run.iterations_completed }} iterations</small>
+                                </div>
+                                <span class="badge bg-{% if run.status == 'completed' %}success{% elif run.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                    {{ run.get_status_display }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent runs.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exchange-alt"></i> Recent Trades
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_trades %}
+                    <div class="list-group list-group-flush">
+                        {% for trade in recent_trades %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ trade.side }} {{ trade.quantity }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ trade.asset_pair }} @ {{ trade.price }}</small>
+                                </div>
+                                <span class="badge bg-{% if trade.status == 'executed' %}success{% elif trade.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                    {{ trade.get_status_display }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent trades.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
