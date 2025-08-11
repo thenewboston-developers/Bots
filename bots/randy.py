@@ -50,8 +50,8 @@ setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DEFAULT_CURRENCY_TICKER = 'TNB'
-INTERVAL_SECONDS = 60  # Time to wait between iterations (0 = no wait)
-MAX_ITERATIONS = 0  # Maximum number of iterations (0 = infinite)
+INTERVAL_SECONDS = 0  # Time to wait between iterations (0 = no wait)
+MAX_ITERATIONS = 100  # Maximum number of iterations (0 = infinite)
 SELL_PROBABILITY = 0.25  # % chance to sell non-TNB currencies
 
 
@@ -212,20 +212,16 @@ class RandyBot:
         # Step 2: Get wallet information
         self.fetch_wallet_info()
 
-        # Step 3: Get platform trade history
-        trade_history = self.client.get_platform_trade_history()
-        logger.info(f'Retrieved {len(trade_history)} platform trade history items')
-
-        # Step 4: Get available asset pairs
+        # Step 3: Get available asset pairs
         asset_pairs = self.client.get_asset_pairs()
         if not asset_pairs:
             raise ValueError('No asset pairs found. Cannot continue.')
 
-        # Step 5: Decide whether to buy or sell
+        # Step 4: Decide whether to buy or sell
         action, currency_to_sell = self.decide_trade_action()
         logger.info(f'Trade decision: {action.upper()}' + (f' {currency_to_sell}' if currency_to_sell else ''))
 
-        # Step 6: Select appropriate asset pair
+        # Step 5: Select appropriate asset pair
         if action == 'sell' and currency_to_sell:
             # Find the asset pair for the currency we want to sell
             selected_pair = RandyBot.get_asset_pair_for_currency(currency_to_sell, asset_pairs)
@@ -240,11 +236,11 @@ class RandyBot:
         asset_pair_id = selected_pair.get('id', 2)
         logger.info(f'Selected asset pair: {asset_pair_id}')
 
-        # Step 7: Get order book for the selected pair
+        # Step 6: Get order book for the selected pair
         order_book = self.client.get_order_book(asset_pair_id)
         self.analyze_order_book(order_book)
 
-        # Step 8: Place an order
+        # Step 7: Place an order
         if action == 'sell' and currency_to_sell:
             # Get the balance of the currency to sell
             currency_balance = int(self.wallets.get(currency_to_sell, 0))
