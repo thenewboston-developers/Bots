@@ -215,9 +215,37 @@ class TNBApiClient:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-    def get_wallets(self) -> List[Dict[str, Any]]:
+    def get_all_wallets(self) -> List[Any]:
+        """Fetch all wallet pages and return a list of wallets.
+
+        Returns:
+            List of all wallets
+        """
+        all_wallets = []
+        page = 1
+
+        while True:
+            response = self.get_wallets(page=page)
+            wallets = response.get('results', [])
+            all_wallets.extend(wallets)
+
+            if not response.get('next'):
+                break
+            page += 1
+
+        logger.info(f'Fetched {len(all_wallets)} wallets across {page} pages')
+        return all_wallets
+
+    def get_wallets(self, page: Optional[int] = None, page_size: Optional[int] = None) -> Dict[str, Any]:
         endpoint = f'{self.base_url}/wallets'
-        response = self.session.get(endpoint)
+        params = {}
+
+        if page is not None:
+            params['page'] = page
+        if page_size is not None:
+            params['page_size'] = page_size
+
+        response = self.session.get(endpoint, params=params)
 
         if response.status_code == 200:
             return response.json()

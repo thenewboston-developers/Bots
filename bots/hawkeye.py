@@ -395,7 +395,7 @@ class HawkeyeBot:
 
     def fetch_wallet_info(self) -> None:
         """Fetch current wallet balances."""
-        wallets = self.client.get_wallets()
+        wallets = self.client.get_all_wallets()
         for wallet in wallets:
             currency = wallet.get('currency', {})
             ticker = currency.get('ticker', 'Unknown')
