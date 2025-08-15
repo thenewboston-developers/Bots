@@ -107,7 +107,7 @@ class RandyBot:
             return 'buy', None
 
     def fetch_wallet_info(self):
-        wallets = self.client.get_wallets()
+        wallets = self.client.get_all_wallets()
         for wallet in wallets:
             currency = wallet.get('currency', {})
             currency_name = currency.get('ticker', 'Unknown')
