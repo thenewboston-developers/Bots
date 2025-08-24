@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 import requests
 
@@ -17,9 +17,48 @@ class TNBApiClient:
             'Content-Type': 'application/json',
         })
 
-    def get_asset_pairs(self) -> List[Dict[str, Any]]:
+    def stream_asset_pairs(self, page_size: Optional[int] = None) -> Generator[Dict[str, Any], None, None]:
+        """Stream asset pairs one by one using pagination.
+
+        This generator yields asset pairs individually to avoid loading all pairs
+        into memory at once. It automatically handles pagination.
+
+        Args:
+            page_size: Optional page size for API requests (default uses API's default)
+
+        Yields:
+            Individual asset pair dictionaries
+
+        Example:
+            for pair in client.stream_asset_pairs():
+                process_pair(pair)
+        """
+        page = 1
+        total_pairs = 0
+
+        while True:
+            response = self.get_asset_pairs(page=page, page_size=page_size)
+            pairs = response.get('results', [])
+
+            for pair in pairs:
+                total_pairs += 1
+                yield pair
+
+            if not response.get('next'):
+                logger.info(f'Streamed {total_pairs} asset pairs across {page} pages')
+                break
+            page += 1
+
+    def get_asset_pairs(self, page: Optional[int] = None, page_size: Optional[int] = None) -> Dict[str, Any]:
         endpoint = f'{self.base_url}/asset-pairs'
-        response = self.session.get(endpoint)
+        params = {}
+
+        if page is not None:
+            params['page'] = page
+        if page_size is not None:
+            params['page_size'] = page_size
+
+        response = self.session.get(endpoint, params=params)
 
         if response.status_code == 200:
             return response.json()
@@ -215,26 +254,37 @@ class TNBApiClient:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-    def get_all_wallets(self) -> List[Any]:
-        """Fetch all wallet pages and return a list of wallets.
+    def stream_wallets(self, page_size: Optional[int] = None) -> Generator[Dict[str, Any], None, None]:
+        """Stream wallets one by one using pagination.
 
-        Returns:
-            List of all wallets
+        This generator yields wallets individually to avoid loading all wallets
+        into memory at once. It automatically handles pagination.
+
+        Args:
+            page_size: Optional page size for API requests (default uses API's default)
+
+        Yields:
+            Individual wallet dictionaries
+
+        Example:
+            for wallet in client.stream_wallets():
+                process_wallet(wallet)
         """
-        all_wallets = []
         page = 1
+        total_wallets = 0
 
         while True:
-            response = self.get_wallets(page=page)
+            response = self.get_wallets(page=page, page_size=page_size)
             wallets = response.get('results', [])
-            all_wallets.extend(wallets)
+
+            for wallet in wallets:
+                total_wallets += 1
+                yield wallet
 
             if not response.get('next'):
+                logger.info(f'Streamed {total_wallets} wallets across {page} pages')
                 break
             page += 1
-
-        logger.info(f'Fetched {len(all_wallets)} wallets across {page} pages')
-        return all_wallets
 
     def get_wallets(self, page: Optional[int] = None, page_size: Optional[int] = None) -> Dict[str, Any]:
         endpoint = f'{self.base_url}/wallets'
