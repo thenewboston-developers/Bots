@@ -275,10 +275,7 @@ class HawkeyeBot:
         """Evaluate all available trading opportunities."""
         logger.info('Evaluating trading opportunities...')
 
-        # Get asset pairs
-        asset_pairs = self.client.get_asset_pairs()
-
-        for pair in asset_pairs:
+        for pair in self.client.stream_asset_pairs():
             asset_pair_id = pair['id']
             primary_currency = pair['primary_currency']['ticker']
             secondary_currency = pair['secondary_currency']['ticker']
@@ -394,9 +391,8 @@ class HawkeyeBot:
             return False
 
     def fetch_wallet_info(self) -> None:
-        """Fetch current wallet balances."""
-        wallets = self.client.get_all_wallets()
-        for wallet in wallets:
+        """Fetch current wallet balances using streaming to avoid memory issues."""
+        for wallet in self.client.stream_wallets():
             currency = wallet.get('currency', {})
             ticker = currency.get('ticker', 'Unknown')
             balance = int(wallet.get('balance', 0))
