@@ -107,8 +107,9 @@ class RandyBot:
             return 'buy', None
 
     def fetch_wallet_info(self):
-        wallets = self.client.get_all_wallets()
-        for wallet in wallets:
+        """Fetch current wallet balances using streaming to avoid memory issues."""
+        # Stream wallets one by one to avoid loading all into memory
+        for wallet in self.client.stream_wallets():
             currency = wallet.get('currency', {})
             currency_name = currency.get('ticker', 'Unknown')
             balance = wallet.get('balance', 0)
@@ -120,10 +121,9 @@ class RandyBot:
         logger.info(f'Wallet balances: {self.wallets}')
         logger.info(f'TNB balance: {self.tnb_balance}')
 
-    @staticmethod
-    def get_asset_pair_for_currency(currency_ticker: str, asset_pairs: list) -> Optional[Dict[str, Any]]:
-        """Find the asset pair for a given currency ticker."""
-        for pair in asset_pairs:
+    def get_asset_pair_for_currency(self, currency_ticker: str) -> Optional[Dict[str, Any]]:
+        """Find the asset pair for a given currency ticker using streaming."""
+        for pair in self.client.stream_asset_pairs():
             # Check if this pair involves the currency we want to trade
             if pair.get('primary_currency', {}).get('ticker') == currency_ticker:
                 return pair
@@ -136,6 +136,24 @@ class RandyBot:
             for ticker, balance in self.wallets.items()
             if ticker != DEFAULT_CURRENCY_TICKER and int(balance) > 0
         }
+
+    @staticmethod
+    def get_random_asset_pair_reservoir_sampling(client) -> Optional[Dict[str, Any]]:
+        """Select a random asset pair using reservoir sampling algorithm.
+
+        This method streams through all asset pairs and randomly selects one
+        with equal probability without loading all pairs into memory.
+        """
+        selected_pair = None
+        count = 0
+
+        for pair in client.stream_asset_pairs():
+            count += 1
+            # Reservoir sampling: select current item with probability 1/count
+            if random.randint(1, count) == 1:
+                selected_pair = pair
+
+        return selected_pair
 
     def place_smart_order(
         self, asset_pair_id: int, order_book: Dict[str, Any], action: str = 'buy', currency_balance: int = 0
@@ -212,35 +230,34 @@ class RandyBot:
         # Step 2: Get wallet information
         self.fetch_wallet_info()
 
-        # Step 3: Get available asset pairs
-        asset_pairs = self.client.get_asset_pairs()
-        if not asset_pairs:
-            raise ValueError('No asset pairs found. Cannot continue.')
-
-        # Step 4: Decide whether to buy or sell
+        # Step 3: Decide whether to buy or sell
         action, currency_to_sell = self.decide_trade_action()
         logger.info(f'Trade decision: {action.upper()}' + (f' {currency_to_sell}' if currency_to_sell else ''))
 
-        # Step 5: Select appropriate asset pair
+        # Step 4: Select appropriate asset pair using streaming
         if action == 'sell' and currency_to_sell:
             # Find the asset pair for the currency we want to sell
-            selected_pair = RandyBot.get_asset_pair_for_currency(currency_to_sell, asset_pairs)
+            selected_pair = self.get_asset_pair_for_currency(currency_to_sell)
             if not selected_pair:
                 logger.warning(f'No asset pair found for {currency_to_sell}, falling back to buy')
                 action = 'buy'
-                selected_pair = random.choice(asset_pairs)
+                # Use reservoir sampling to select a random pair
+                selected_pair = RandyBot.get_random_asset_pair_reservoir_sampling(self.client)
         else:
-            # Random pair for buying
-            selected_pair = random.choice(asset_pairs)
+            # Random pair for buying using reservoir sampling
+            selected_pair = RandyBot.get_random_asset_pair_reservoir_sampling(self.client)
+
+        if not selected_pair:
+            raise ValueError('No asset pairs found. Cannot continue.')
 
         asset_pair_id = selected_pair.get('id', 2)
         logger.info(f'Selected asset pair: {asset_pair_id}')
 
-        # Step 6: Get order book for the selected pair
+        # Step 5: Get order book for the selected pair
         order_book = self.client.get_order_book(asset_pair_id)
         self.analyze_order_book(order_book)
 
-        # Step 7: Place an order
+        # Step 6: Place an order
         if action == 'sell' and currency_to_sell:
             # Get the balance of the currency to sell
             currency_balance = int(self.wallets.get(currency_to_sell, 0))

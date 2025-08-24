@@ -28,11 +28,9 @@ def get_sell_orders_by_currency(client: TNBApiClient) -> Dict[str, List[Dict]]:
     Returns a dictionary mapping currency symbols to lists of market data.
     """
     logger.info('Fetching asset pairs...')
-    asset_pairs = client.get_asset_pairs()
-
     currencies_with_sells = defaultdict(list)
 
-    for pair in asset_pairs:
+    for pair in client.stream_asset_pairs():
         asset_pair_id = pair['id']
         primary_currency = pair['primary_currency']['ticker']
         secondary_currency = pair['secondary_currency']['ticker']
